@@ -28,10 +28,8 @@ st.markdown("""
 
 # Connect to postgresql
 conn = psycopg2.connect(
-    host="localhost",
-    database="forkscore",
-    user="postgres",
-    password="Namtrinh15121128"
+    st.secrets["DATABASE_URL"],
+    connect_timeout=10
 )
 
 # initialize session state
