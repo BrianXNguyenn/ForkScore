@@ -27,15 +27,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-url = urllib.parse.urlparse(st.secrets["DATABASE_URL"])
+# ── DATABASE CONNECTION (SSL fix for Supabase + Streamlit Cloud) ──
 conn = psycopg2.connect(
-    host=url.hostname,
-    database=url.path[1:],
-    user=url.username,
-    password=url.password,
-    port=url.port,
-    sslmode="require",
-    connect_timeout=10
+    st.secrets["DATABASE_URL"],
+    sslmode="require"
 )
 
 # initialize session state
