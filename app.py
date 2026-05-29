@@ -9,31 +9,30 @@ import base64
 from datetime import datetime
 import urllib.parse
 
-# Setup browser
+# ── PAGE CONFIG ───────────────────────────────────────────────
 st.set_page_config(
     page_title="ForkScore",
     page_icon="🍴",
     layout="wide"
 )
 
-# import Poppins font and apply globally
+# ── FONTS ─────────────────────────────────────────────────────
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-    
     html, body, [class*="css"], [class*="st-"], h1, h2, h3, h4, p, div, span, button {
         font-family: 'Poppins', sans-serif !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ── DATABASE CONNECTION (SSL fix for Supabase + Streamlit Cloud) ──
+# ── DATABASE CONNECTION ───────────────────────────────────────
 conn = psycopg2.connect(
     st.secrets["DATABASE_URL"],
     sslmode="require"
 )
 
-# initialize session state
+# ── SESSION STATE ─────────────────────────────────────────────
 if "results" not in st.session_state:
     st.session_state.results = None
 if "selected_city" not in st.session_state:
@@ -43,14 +42,13 @@ if "page" not in st.session_state:
 if "surprise" not in st.session_state:
     st.session_state.surprise = None
 
-# helper function to load image as base64
+# ── HELPERS ───────────────────────────────────────────────────
 def load_image_b64(path):
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
 logo_b64 = load_image_b64("final fork score logo.png")
 
-# time format helper
 def format_time(t):
     if pd.isna(t):
         return None
@@ -66,7 +64,97 @@ def format_time(t):
         return f"{hour}:{minute} {period}"
     return t
 
-# ── LANDING PAGE ─────────────────────────────────────────────
+# ── NAV BAR ───────────────────────────────────────────────────
+# The nav bar appears on every page except the landing page.
+# It shows the logo + app name on the left, and three page
+# buttons on the right: Search, Explore, About.
+# Clicking a button sets st.session_state.page and reruns.
+
+def show_navbar():
+    st.markdown("""
+        <style>
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0px 12px 0px;
+            margin-bottom: 0px;
+        }
+        .nav-logo-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .nav-title {
+            color: white;
+            font-size: 28px;
+            font-weight: 800;
+            margin: 0;
+            padding: 0;
+            font-family: Poppins, sans-serif;
+        }
+        .nav-subtitle {
+            color: #888888;
+            font-size: 13px;
+            margin: 0;
+            padding: 0;
+            font-family: Poppins, sans-serif;
+        }
+        div.stButton > button {
+            background: transparent;
+            color: #AAAAAA;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            cursor: pointer;
+            font-family: Poppins, sans-serif;
+            transition: color 0.2s ease;
+        }
+        div.stButton > button:hover {
+            color: white;
+            background: rgba(255,255,255,0.05);
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    col_logo, col_spacer, col_search, col_explore, col_about = st.columns([3, 4, 1, 1, 1])
+
+    with col_logo:
+        st.markdown(f"""
+            <div class='nav-logo-area'>
+                <img src='data:image/png;base64,{logo_b64}' width='48'/>
+                <div>
+                    <p class='nav-title'>ForkScore</p>
+                    <p class='nav-subtitle'>Find Food. Score Better.</p>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col_search:
+        if st.button("Search", key="nav_search"):
+            st.session_state.page = "search"
+            st.rerun()
+
+    with col_explore:
+        if st.button("Explore", key="nav_explore"):
+            st.session_state.page = "explore"
+            st.rerun()
+
+    with col_about:
+        if st.button("About", key="nav_about"):
+            st.session_state.page = "about"
+            st.rerun()
+
+    st.divider()
+
+
+# ══════════════════════════════════════════════════════════════
+# LANDING PAGE
+# A centered welcome screen with a single CTA button.
+# No nav bar on this page — keeps it clean and focused.
+# ══════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
 
     st.markdown("""
@@ -76,7 +164,6 @@ if st.session_state.page == "landing":
     """, unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1, 3, 1])
-
     with col2:
         st.markdown(f"""
             <div style='text-align: center; padding-top: 60px;'>
@@ -86,27 +173,18 @@ if st.session_state.page == "landing":
 
         st.markdown("""
             <h1 style='
-                color: white;
-                font-size: 64px;
-                font-weight: 800;
-                margin: 0;
-                padding: 0;
-                text-align: center;
+                color: white; font-size: 64px; font-weight: 800;
+                margin: 0; padding: 0; text-align: center;
                 font-family: Poppins, sans-serif;
             '>ForkScore</h1>
             <p style='
-                color: #888888;
-                font-size: 20px;
-                margin: 8px 0 24px 0;
-                text-align: center;
+                color: #888888; font-size: 20px;
+                margin: 8px 0 24px 0; text-align: center;
                 font-family: Poppins, sans-serif;
             '>Find Food. Score Better.</p>
             <p style='
-                color: #CCCCCC;
-                font-size: 16px;
-                line-height: 1.8;
-                text-align: center;
-                margin-bottom: 40px;
+                color: #CCCCCC; font-size: 16px; line-height: 1.8;
+                text-align: center; margin-bottom: 40px;
                 font-family: Poppins, sans-serif;
             '>
                 Can't decide where to eat? Find the best meal for your budget. Every time.<br><br>
@@ -117,27 +195,24 @@ if st.session_state.page == "landing":
         st.markdown("""
             <style>
             div.stButton > button {
-                background: linear-gradient(135deg, #D32F2F, #7B0000);
-                color: white;
-                font-size: 18px;
-                font-weight: 700;
-                border: none;
-                border-radius: 50px;
-                padding: 14px 48px;
+                background: linear-gradient(135deg, #D32F2F, #7B0000) !important;
+                color: white !important;
+                font-size: 18px !important;
+                font-weight: 700 !important;
+                border: none !important;
+                border-radius: 50px !important;
+                padding: 14px 48px !important;
                 min-width: 280px;
-                width: auto;
                 display: block;
                 margin: 0 auto;
                 cursor: pointer;
-                transition: transform 0.2s ease, box-shadow 0.2s ease;
                 box-shadow: 0 4px 20px rgba(211, 47, 47, 0.5);
-                white-space: nowrap;
-                font-family: Poppins, sans-serif;
+                font-family: Poppins, sans-serif !important;
             }
             div.stButton > button:hover {
                 transform: translateY(-3px);
                 box-shadow: 0 8px 30px rgba(211, 47, 47, 0.7);
-                color: white;
+                color: white !important;
             }
             </style>
         """, unsafe_allow_html=True)
@@ -154,23 +229,19 @@ if st.session_state.page == "landing":
             </p>
         """, unsafe_allow_html=True)
 
-# ── SEARCH PAGE ───────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════
+# SEARCH PAGE
+# Left sidebar has all filters. Main area shows results.
+# Nav bar at the top for navigation.
+# ══════════════════════════════════════════════════════════════
 elif st.session_state.page == "search":
 
-    col1, col2 = st.columns([1, 10])
-    with col1:
-        st.markdown(f"""
-            <img src='data:image/png;base64,{logo_b64}' width='100'/>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown("""
-            <div style='display: flex; flex-direction: column; justify-content: center; height: 100%;'>
-                <h1 style='color: white; margin: 0; padding: 0; font-size: 48px; font-family: Poppins, sans-serif;'>ForkScore</h1>
-                <p style='color: #888888; font-size: 18px; margin: 0; padding: 0; font-family: Poppins, sans-serif;'>Find Food. Score Better.</p>
-            </div>
-        """, unsafe_allow_html=True)
+    show_navbar()
 
-    st.divider()
+    # ── Sidebar filters ───────────────────────────────────────
+    # The sidebar contains only search filters now.
+    # No nav buttons here — those live in the top nav bar.
 
     st.sidebar.markdown(f"""
         <img src='data:image/png;base64,{logo_b64}' width='60'/>
@@ -178,11 +249,7 @@ elif st.session_state.page == "search":
     st.sidebar.title("Find Restaurants")
     st.sidebar.markdown("---")
 
-    cities_query = """
-        SELECT DISTINCT city
-        FROM restaurants
-        ORDER BY city
-    """
+    cities_query = "SELECT DISTINCT city FROM restaurants ORDER BY city"
     cities_df = pd.read_sql(cities_query, conn)
     city_list = cities_df["city"].tolist()
     selected_city = st.sidebar.selectbox("City", city_list)
@@ -190,10 +257,10 @@ elif st.session_state.page == "search":
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Price Range**")
     price_options = {
-        "\$": 1,
-        "\$\$": 2,
-        "\$\$\$": 3,
-        "\$\$\$\$": 4
+        "$": 1,
+        "$$": 2,
+        "$$$": 3,
+        "$$$$": 4
     }
     selected_prices = []
     for label, value in price_options.items():
@@ -234,10 +301,10 @@ elif st.session_state.page == "search":
             'Oyster Bar', 'Sushi', 'Pizza', 'Pasta', 'Burgers',
             'Wings', 'Fried Chicken', 'Burritos', 'Quesadillas',
             'Dumplings', 'Stew', 'Chili', 'Curry', 'Tapas',
-            'Mezze', 'Charcuterie', 'Fondue', 'Creole', 'Gumbo',
+            'Mezze', 'Charcuterie', 'Creole', 'Gumbo',
             'New Mexican Cuisine', 'Honduran', 'Guatemalan', 'Jamaican',
             'Haitian', 'Ecuadorian', 'Chilean', 'Georgian', 'Eritrean',
-            'Somali', 'Nigerian', 'Kenyan', 'South African', 'Kosher',
+            'Somali', 'Nigerian', 'Kenyan', 'South African',
             'Cantonese', 'Shanghainese', 'Hakka', 'Tibetan', 'Laotian'
         )
         ORDER BY cuisine_type
@@ -245,9 +312,7 @@ elif st.session_state.page == "search":
     cuisines_df = pd.read_sql(cuisines_query, conn)
     cuisine_list = cuisines_df["cuisine_type"].tolist()
     selected_cuisines = st.sidebar.multiselect(
-        "Cuisine",
-        cuisine_list,
-        placeholder="All Cuisines"
+        "Cuisine", cuisine_list, placeholder="All Cuisines"
     )
 
     st.sidebar.markdown("---")
@@ -256,40 +321,13 @@ elif st.session_state.page == "search":
     st.sidebar.markdown("---")
     open_now = st.sidebar.toggle("Open Now")
 
-    st.sidebar.markdown("""
-        <style>
-        div.stButton > button {
-            background-color: #D32F2F;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            padding: 12px;
-            width: 100%;
-            cursor: pointer;
-            font-family: Poppins, sans-serif;
-        }
-        div.stButton > button:hover {
-            background-color: #B71C1C;
-            color: white;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    if st.sidebar.button("❓ What is Fork Score?"):
-        st.session_state.page = "forkscore"
-        st.session_state.surprise = None
-        st.rerun()
-
-    if st.sidebar.button("← Back to Home"):
-        st.session_state.page = "landing"
-        st.session_state.results = None
-        st.session_state.surprise = None
-        st.rerun()
-
     st.sidebar.markdown("---")
     search = st.sidebar.button("🍴 Find Restaurants", use_container_width=True)
+
+    # ── Search logic ──────────────────────────────────────────
+    # When the user clicks Find Restaurants, we run the SQL
+    # query with their chosen filters and store results in
+    # session state so they persist when navigating pages.
 
     if search:
         if not selected_prices:
@@ -304,6 +342,8 @@ elif st.session_state.page == "search":
                     r.name,
                     r.city,
                     r.address,
+                    r.latitude,
+                    r.longitude,
                     rt.overall_rating,
                     rt.review_count,
                     p.price_level,
@@ -329,22 +369,19 @@ elif st.session_state.page == "search":
             if open_now:
                 query += """
                     AND r.id IN (
-                        SELECT restaurant_id 
-                        FROM hours 
+                        SELECT restaurant_id FROM hours
                         WHERE day_of_week = %s
                         AND (
-                            LPAD(SPLIT_PART(open_time, ':', 1), 2, '0') || ':' || 
+                            LPAD(SPLIT_PART(open_time, ':', 1), 2, '0') || ':' ||
                             LPAD(SPLIT_PART(open_time, ':', 2), 2, '0')
                         ) <= %s
                         AND (
-                            LPAD(SPLIT_PART(close_time, ':', 1), 2, '0') || ':' || 
+                            LPAD(SPLIT_PART(close_time, ':', 1), 2, '0') || ':' ||
                             LPAD(SPLIT_PART(close_time, ':', 2), 2, '0')
                         ) >= %s
                     )
                 """
-                params.append(current_day)
-                params.append(current_time)
-                params.append(current_time)
+                params.extend([current_day, current_time, current_time])
 
             query += " ORDER BY p.fork_score DESC"
 
@@ -356,6 +393,7 @@ elif st.session_state.page == "search":
             st.session_state.selected_city = selected_city
             st.session_state.surprise = None
 
+    # ── Results display ───────────────────────────────────────
     if st.session_state.results is not None:
         results = st.session_state.results.copy()
         city_display = st.session_state.selected_city
@@ -379,45 +417,32 @@ elif st.session_state.page == "search":
                 results = results.sort_values("review_count", ascending=False)
 
             results["price_level"] = results["price_level"].map({
-                1: "$",
-                2: "$$",
-                3: "$$$",
-                4: "$$$$"
+                1: "$", 2: "$$", 3: "$$$", 4: "$$$$"
             })
 
-            results.columns = ["Name", "City", "Address", "Rating", "Reviews", "Price", "Fork Score", "Open Time", "Close Time"]
+            results.columns = [
+                "Name", "City", "Address", "Latitude", "Longitude",
+                "Rating", "Reviews", "Price", "Fork Score", "Open Time", "Close Time"
+            ]
 
-            # surprise me buttons
+            # Surprise Me
             col_s1, col_s2, col_s3, col_s4 = st.columns([1, 2, 1, 1])
             with col_s2:
                 if st.button("🎲 Surprise Me!", use_container_width=True):
-                    top_results = results.head(20)
-                    surprise = top_results.sample(1).iloc[0]
+                    surprise = results.head(20).sample(1).iloc[0]
                     st.session_state.surprise = surprise
             with col_s3:
                 if st.button("Reroll", use_container_width=True):
-                    if len(results) > 0:
-                        top_results = results.head(20)
-                        surprise = top_results.sample(1).iloc[0]
-                        st.session_state.surprise = surprise
+                    surprise = results.head(20).sample(1).iloc[0]
+                    st.session_state.surprise = surprise
 
-            # display surprise card
+            # Surprise card
             if st.session_state.get("surprise") is not None:
                 surprise = st.session_state.surprise
                 score = surprise["Fork Score"]
-                if score >= 4.0:
-                    s_color = "#2E7D32"
-                    s_label = "Excellent"
-                    s_emoji = "🟢"
-                elif score >= 3.0:
-                    s_color = "#F57F17"
-                    s_label = "Great"
-                    s_emoji = "🟡"
-                else:
-                    s_color = "#D32F2F"
-                    s_label = "Good"
-                    s_emoji = "🔴"
-
+                s_color = "#2E7D32" if score >= 4.0 else "#F57F17" if score >= 3.0 else "#D32F2F"
+                s_label = "Excellent" if score >= 4.0 else "Great" if score >= 3.0 else "Good"
+                s_emoji = "🟢" if score >= 4.0 else "🟡" if score >= 3.0 else "🔴"
                 open_fmt = format_time(surprise["Open Time"])
                 close_fmt = format_time(surprise["Close Time"])
                 hours_display = f"🕐 Today: {open_fmt} — {close_fmt}" if open_fmt and close_fmt else "🕐 Hours not available"
@@ -425,13 +450,14 @@ elif st.session_state.page == "search":
                 st.markdown(f"""
                     <div style='
                         background: linear-gradient(135deg, #1A1A2E, #16213E);
-                        border-radius: 16px;
-                        padding: 24px;
-                        margin-bottom: 24px;
+                        border-radius: 16px; padding: 24px; margin-bottom: 24px;
                         border: 2px solid #D32F2F;
                         box-shadow: 0 0 24px rgba(211, 47, 47, 0.4);
                     '>
-                        <p style='color: #D32F2F; font-size: 14px; font-weight: 700; margin: 0 0 8px 0; font-family: Poppins, sans-serif; text-transform: uppercase; letter-spacing: 2px;'>🎲 Your ForkScore Pick</p>
+                        <p style='color: #D32F2F; font-size: 14px; font-weight: 700; margin: 0 0 8px 0;
+                            font-family: Poppins, sans-serif; text-transform: uppercase; letter-spacing: 2px;'>
+                            🎲 Your ForkScore Pick
+                        </p>
                         <div style='display: flex; justify-content: space-between; align-items: center;'>
                             <div>
                                 <h2 style='color: white; margin: 0; font-size: 26px; font-family: Poppins, sans-serif;'>{surprise["Name"]}</h2>
@@ -448,14 +474,11 @@ elif st.session_state.page == "search":
                     </div>
                 """, unsafe_allow_html=True)
 
-            # results header
+            # Results header
             st.markdown(f"""
                 <div style='
                     background: linear-gradient(135deg, #D32F2F, #7B0000);
-                    border-radius: 12px;
-                    padding: 20px 24px;
-                    margin-bottom: 24px;
-                    text-align: center;
+                    border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; text-align: center;
                 '>
                     <h2 style='color: white; margin: 0; font-size: 24px; font-family: Poppins, sans-serif;'>
                         🔥 {len(results)} restaurants ranked for you in {city_display}
@@ -466,21 +489,16 @@ elif st.session_state.page == "search":
                 </div>
             """, unsafe_allow_html=True)
 
-            # hover CSS
+            # Restaurant cards
             st.markdown("""
                 <style>
                 .restaurant-card {
-                    background-color: white;
-                    border-radius: 12px;
-                    padding: 20px 24px;
-                    margin-bottom: 12px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
+                    background-color: white; border-radius: 12px;
+                    padding: 20px 24px; margin-bottom: 12px;
+                    display: flex; justify-content: space-between; align-items: center;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
                     transition: transform 0.2s ease, box-shadow 0.2s ease, border-left 0.2s ease;
-                    border-left: 4px solid transparent;
-                    cursor: pointer;
+                    border-left: 4px solid transparent; cursor: pointer;
                 }
                 .restaurant-card:hover {
                     transform: translateY(-3px);
@@ -490,29 +508,14 @@ elif st.session_state.page == "search":
                 </style>
             """, unsafe_allow_html=True)
 
-            # restaurant cards
             for _, row in results.iterrows():
                 score = row["Fork Score"]
-                if score >= 4.0:
-                    score_color = "#2E7D32"
-                    score_label = "Excellent"
-                    score_emoji = "🟢"
-                elif score >= 3.0:
-                    score_color = "#F57F17"
-                    score_label = "Great"
-                    score_emoji = "🟡"
-                else:
-                    score_color = "#D32F2F"
-                    score_label = "Good"
-                    score_emoji = "🔴"
-
+                score_color = "#2E7D32" if score >= 4.0 else "#F57F17" if score >= 3.0 else "#D32F2F"
+                score_label = "Excellent" if score >= 4.0 else "Great" if score >= 3.0 else "Good"
+                score_emoji = "🟢" if score >= 4.0 else "🟡" if score >= 3.0 else "🔴"
                 open_fmt = format_time(row["Open Time"])
                 close_fmt = format_time(row["Close Time"])
-
-                if open_fmt and close_fmt:
-                    hours_display = f"🕐 Today: {open_fmt} — {close_fmt}"
-                else:
-                    hours_display = "🕐 Hours not available"
+                hours_display = f"🕐 Today: {open_fmt} — {close_fmt}" if open_fmt and close_fmt else "🕐 Hours not available"
 
                 st.markdown(f"""
                     <div class='restaurant-card'>
@@ -530,184 +533,175 @@ elif st.session_state.page == "search":
                     </div>
                 """, unsafe_allow_html=True)
 
-# ── WHAT IS FORK SCORE PAGE ───────────────────────────────────
-elif st.session_state.page == "forkscore":
 
-    # header
-    col1, col2 = st.columns([1, 10])
-    with col1:
-        st.markdown(f"""
-            <img src='data:image/png;base64,{logo_b64}' width='100'/>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown("""
-            <div style='display: flex; flex-direction: column; justify-content: center; height: 100%;'>
-                <h1 style='color: white; margin: 0; padding: 0; font-size: 48px; font-family: Poppins, sans-serif;'>ForkScore</h1>
-                <p style='color: #888888; font-size: 18px; margin: 0; padding: 0; font-family: Poppins, sans-serif;'>Find Food. Score Better.</p>
-            </div>
-        """, unsafe_allow_html=True)
+# ══════════════════════════════════════════════════════════════
+# EXPLORE PAGE
+# Placeholder for now — map and charts will be added here next.
+# ══════════════════════════════════════════════════════════════
+elif st.session_state.page == "explore":
 
-    st.divider()
+    show_navbar()
 
-    # back button
-    if st.button("← Back to Search"):
-        st.session_state.page = "search"
-        st.rerun()
+    st.markdown("""
+        <h2 style='color: white; font-size: 36px; font-weight: 800;
+            font-family: Poppins, sans-serif; margin-bottom: 8px;'>
+            📊 Explore
+        </h2>
+        <p style='color: #AAAAAA; font-size: 16px; font-family: Poppins, sans-serif; margin-bottom: 32px;'>
+            Interactive map and charts coming soon. Search for a city first, then come back here to explore.
+        </p>
+    """, unsafe_allow_html=True)
+
+    if st.session_state.results is None:
+        st.info("👈 Go to Search first and find restaurants in a city — then come back here to explore the data.")
+    else:
+        st.success(f"✅ You have results loaded for **{st.session_state.selected_city}**. Charts and map will appear here soon!")
+
+
+# ══════════════════════════════════════════════════════════════
+# ABOUT PAGE
+# Explains the Fork Score formula. Same content as before,
+# now accessed via the nav bar instead of a sidebar button.
+# ══════════════════════════════════════════════════════════════
+elif st.session_state.page == "about":
+
+    show_navbar()
 
     st.markdown("""
         <style>
         .info-card {
-            background-color: #1E1E1E;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 16px;
+            background-color: #1E1E1E; border-radius: 12px;
+            padding: 24px; margin-bottom: 16px;
             border-left: 4px solid #D32F2F;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # page title
     st.markdown("""
-        <h2 style='color: white; font-size: 36px; font-weight: 800; font-family: Poppins, sans-serif; margin-bottom: 8px;'>
+        <h2 style='color: white; font-size: 36px; font-weight: 800;
+            font-family: Poppins, sans-serif; margin-bottom: 8px;'>
             What is the Fork Score?
         </h2>
         <p style='color: #AAAAAA; font-size: 16px; font-family: Poppins, sans-serif; margin-bottom: 32px;'>
-            Every restaurant on ForkScore gets a Fork Score — a transparent, data-driven number that tells you 
+            Every restaurant on ForkScore gets a Fork Score — a transparent, data-driven number that tells you
             how good and how trustworthy a restaurant actually is.
         </p>
     """, unsafe_allow_html=True)
 
-    # section 1 - the problem
     st.markdown("""
         <div class='info-card'>
-            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700; margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
+            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
+                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
                 The Problem with Yelp
             </h3>
             <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0; font-family: Poppins, sans-serif;'>
-                Yelp ranks restaurants by popularity, advertising spend, and user engagement — not actual quality. 
+                Yelp ranks restaurants by popularity, advertising spend, and user engagement — not actual quality.
                 A mediocre restaurant with 3,000 reviews consistently outranks a genuinely great one with 80 reviews.
                 The algorithm is a black box. Nobody outside Yelp knows exactly why one restaurant ranks above another.
             </p>
         </div>
     """, unsafe_allow_html=True)
 
-    # section 2 - the formula
     st.markdown("""
         <div class='info-card'>
-            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700; margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
+            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
+                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
                 The Formula
             </h3>
             <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0; font-family: Poppins, sans-serif;'>
-                The Fork Score combines two factors — rating and review reliability — into one transparent number. If most of the reviews are negative, then the rating would decrease,
-                which also affects the Fork Score.
+                The Fork Score combines two factors — rating and review reliability — into one transparent number.
             </p>
-            <div style='
-                background: #2A2A2A;
-                border-radius: 8px;
-                padding: 16px 24px;
-                text-align: center;
-                margin-bottom: 16px;
-            '>
+            <div style='background: #2A2A2A; border-radius: 8px; padding: 16px 24px;
+                text-align: center; margin-bottom: 16px;'>
                 <p style='color: white; font-size: 22px; font-weight: 700; margin: 0; font-family: Courier New, monospace;'>
                     Fork Score = Rating × Reliability
                 </p>
             </div>
             <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0; font-family: Poppins, sans-serif;'>
-                <strong style='color: white;'>Rating</strong> — the raw Yelp star rating from 1.0 to 5.0. 
-                Core measure of food and experience quality.<br><br>
-                <strong style='color: white;'>Reliability</strong> — a number from 0 to 1 based on how many people 
-                have reviewed the restaurant. A restaurant with 8 reviews gets a reliability of 0.35. 
-                One with 400 reviews gets 0.96. Restaurants with 500+ reviews are fully trusted at 1.0.
+                <strong style='color: white;'>Rating</strong> — the raw Yelp star rating from 1.0 to 5.0.<br><br>
+                <strong style='color: white;'>Reliability</strong> — a number from 0 to 1 based on how many people
+                have reviewed the restaurant. A restaurant with 8 reviews gets 0.35.
+                One with 500+ reviews gets 1.0.
             </p>
         </div>
     """, unsafe_allow_html=True)
 
-    # section 3 - reliability table
     st.markdown("""
         <div class='info-card'>
-            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700; margin: 0 0 16px 0; font-family: Poppins, sans-serif;'>
+            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
+                margin: 0 0 16px 0; font-family: Poppins, sans-serif;'>
                 Reliability by Review Count
             </h3>
     """, unsafe_allow_html=True)
 
-    reliability_data = {
+    reliability_df = pd.DataFrame({
         "Reviews": ["8", "50", "150", "400", "500+"],
         "Reliability Score": ["0.35", "0.63", "0.81", "0.96", "1.00"],
         "Trust Level": ["Barely proven", "Getting reliable", "Fairly reliable", "Very reliable", "Fully trusted ✓"]
-    }
-    reliability_df = pd.DataFrame(reliability_data)
+    })
     st.dataframe(reliability_df, use_container_width=True, hide_index=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # section 4 - why log scaling
     st.markdown("""
         <div class='info-card'>
-            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700; margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
+            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
+                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
                 Why Log Scaling?
             </h3>
             <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0; font-family: Poppins, sans-serif;'>
-                Trust does not grow at a constant rate as reviews accumulate. Going from 10 to 50 reviews is a 
-                big deal — the restaurant is becoming proven. Going from 450 to 490 reviews barely matters — 
-                it is already well established.<br><br>
-                A linear formula would treat both situations identically, which is unrealistic. 
-                Log scaling grows fast at first and slows down as reviews accumulate — 
+                Trust does not grow at a constant rate as reviews accumulate. Going from 10 to 50 reviews is a
+                big deal — the restaurant is becoming proven. Going from 450 to 490 reviews barely matters.
+                Log scaling grows fast at first and slows down as reviews accumulate —
                 accurately reflecting how trust actually builds over time.
             </p>
         </div>
     """, unsafe_allow_html=True)
 
-    # section 5 - price handling
     st.markdown("""
         <div class='info-card'>
-            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700; margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
+            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
+                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
                 How Price Works
             </h3>
             <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0; font-family: Poppins, sans-serif;'>
-                Price is not part of the Fork Score formula. Instead you set your budget first using the price 
-                filter and the Fork Score ranks every restaurant within that budget by quality and consistency. 
-                This means a taco spot and a fine dining restaurant are never compared against each other 
-                unless you specifically choose to include both price tiers.
+                Price is not part of the Fork Score formula. Instead you set your budget first and the Fork Score
+                ranks every restaurant within that budget by quality and consistency.
             </p>
         </div>
     """, unsafe_allow_html=True)
 
-    # section 6 - example
     st.markdown("""
         <div class='info-card'>
-            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700; margin: 0 0 16px 0; font-family: Poppins, sans-serif;'>
+            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
+                margin: 0 0 16px 0; font-family: Poppins, sans-serif;'>
                 Fork Score in Action
             </h3>
     """, unsafe_allow_html=True)
 
-    example_data = {
+    example_df = pd.DataFrame({
         "Restaurant": ["Proven Taco Spot", "New Taco Spot", "Italian Bistro"],
         "Rating": ["4.5 ⭐", "4.5 ⭐", "4.7 ⭐"],
         "Reviews": ["400", "8", "300"],
         "Reliability": ["0.96", "0.35", "0.92"],
         "Fork Score": ["4.32", "1.58", "4.32"]
-    }
-    example_df = pd.DataFrame(example_data)
+    })
     st.dataframe(example_df, use_container_width=True, hide_index=True)
 
     st.markdown("""
         <p style='color: #AAAAAA; font-size: 14px; font-family: Poppins, sans-serif; margin-top: 12px;'>
-            The proven taco spot and the Italian bistro tie on Fork Score even though the bistro has a 
-            higher raw rating — because the taco spot has far more reviews confirming its quality. 
-            The new taco spot scores much lower despite the same rating because it has not been proven yet.
+            The proven taco spot and the Italian bistro tie even though the bistro has a higher raw rating —
+            because the taco spot has far more reviews confirming its quality.
         </p>
-    </div>
+        </div>
     """, unsafe_allow_html=True)
 
-    # closing message
     st.markdown("""
         <div style='
             background: linear-gradient(135deg, #D32F2F, #7B0000);
-            border-radius: 12px;
-            padding: 24px;
-            margin-top: 24px;
-            text-align: center;
+            border-radius: 12px; padding: 24px; margin-top: 24px; text-align: center;
         '>
-            <h3 style='color: white; font-size: 20px; font-weight: 700; margin: 0 0 8px 0; font-family: Poppins, sans-serif;'>
+            <h3 style='color: white; font-size: 20px; font-weight: 700;
+                margin: 0 0 8px 0; font-family: Poppins, sans-serif;'>
                 No black box. No ads. No sponsored results.
             </h3>
             <p style='color: #FFCDD2; font-size: 15px; margin: 0; font-family: Poppins, sans-serif;'>
