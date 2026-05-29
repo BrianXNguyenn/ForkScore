@@ -7,6 +7,7 @@ from PIL import Image
 import time
 import base64
 from datetime import datetime
+import urllib.parse
 
 # Setup browser
 st.set_page_config(
@@ -26,9 +27,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Connect to postgresql
+url = urllib.parse.urlparse(st.secrets["DATABASE_URL"])
 conn = psycopg2.connect(
-    st.secrets["DATABASE_URL"],
+    host=url.hostname,
+    database=url.path[1:],
+    user=url.username,
+    password=url.password,
+    port=url.port,
+    sslmode="require",
     connect_timeout=10
 )
 
