@@ -16,12 +16,53 @@ st.set_page_config(
     layout="wide"
 )
 
-# ── FONTS ─────────────────────────────────────────────────────
+# ── GLOBAL STYLES ─────────────────────────────────────────────
+# This block runs on every page. It sets the font, styles all
+# buttons red, hides the sidebar tooltip, and styles the nav.
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
     html, body, [class*="css"], [class*="st-"], h1, h2, h3, h4, p, div, span, button {
         font-family: 'Poppins', sans-serif !important;
+    }
+
+    /* ── Red button style applied globally to all pages ── */
+    div.stButton > button {
+        background: linear-gradient(135deg, #D32F2F, #7B0000) !important;
+        color: white !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 10px 28px !important;
+        cursor: pointer !important;
+        font-family: Poppins, sans-serif !important;
+        box-shadow: 0 4px 14px rgba(211, 47, 47, 0.4) !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    div.stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(211, 47, 47, 0.6) !important;
+        color: white !important;
+    }
+
+    /* ── Nav buttons are transparent, not red ── */
+    div.stButton > button[kind="nav"] {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    /* ── Hide the keyboard_double_arrow tooltip on sidebar ── */
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
+    button[title="keyboard_double_arrow_left"],
+    button[title="keyboard_double_arrow_right"] {
+        display: none !important;
+    }
+    [data-testid="stSidebarCollapseButton"] {
+        display: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -65,72 +106,57 @@ def format_time(t):
     return t
 
 # ── NAV BAR ───────────────────────────────────────────────────
-# The nav bar appears on every page except the landing page.
-# It shows the logo + app name on the left, and three page
-# buttons on the right: Search, Explore, About.
-# Clicking a button sets st.session_state.page and reruns.
+# Shows logo + title on the left, and Home/Search/Explore/About
+# buttons on the right. Appears on every page except landing.
+# Nav buttons use custom CSS to stay transparent (not red).
 
 def show_navbar():
     st.markdown("""
         <style>
-        .nav-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0px 12px 0px;
-            margin-bottom: 0px;
+        /* Nav buttons override — transparent, not red */
+        [data-testid="stHorizontalBlock"] div.stButton > button {
+            background: transparent !important;
+            color: #AAAAAA !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 10px 22px !important;
+            box-shadow: none !important;
+            font-family: Poppins, sans-serif !important;
+            transition: color 0.2s ease !important;
         }
-        .nav-logo-area {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-        .nav-title {
-            color: white;
-            font-size: 28px;
-            font-weight: 800;
-            margin: 0;
-            padding: 0;
-            font-family: Poppins, sans-serif;
-        }
-        .nav-subtitle {
-            color: #888888;
-            font-size: 13px;
-            margin: 0;
-            padding: 0;
-            font-family: Poppins, sans-serif;
-        }
-        div.stButton > button {
-            background: transparent;
-            color: #AAAAAA;
-            font-size: 15px;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 20px;
-            cursor: pointer;
-            font-family: Poppins, sans-serif;
-            transition: color 0.2s ease;
-        }
-        div.stButton > button:hover {
-            color: white;
-            background: rgba(255,255,255,0.05);
+        [data-testid="stHorizontalBlock"] div.stButton > button:hover {
+            color: white !important;
+            background: rgba(255,255,255,0.07) !important;
+            transform: none !important;
+            box-shadow: none !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    col_logo, col_spacer, col_search, col_explore, col_about = st.columns([3, 4, 1, 1, 1])
+    col_logo, col_spacer, col_home, col_search, col_explore, col_about = st.columns([4, 3, 1, 1, 1, 1])
 
     with col_logo:
         st.markdown(f"""
-            <div class='nav-logo-area'>
-                <img src='data:image/png;base64,{logo_b64}' width='48'/>
+            <div style='display: flex; align-items: center; gap: 16px; padding: 8px 0;'>
+                <img src='data:image/png;base64,{logo_b64}' width='56'/>
                 <div>
-                    <p class='nav-title'>ForkScore</p>
-                    <p class='nav-subtitle'>Find Food. Score Better.</p>
+                    <p style='color: white; font-size: 32px; font-weight: 800;
+                        margin: 0; padding: 0; font-family: Poppins, sans-serif;
+                        line-height: 1.1;'>ForkScore</p>
+                    <p style='color: #888888; font-size: 14px; margin: 0;
+                        padding: 0; font-family: Poppins, sans-serif;'>Find Food. Score Better.</p>
                 </div>
             </div>
         """, unsafe_allow_html=True)
+
+    with col_home:
+        if st.button("Home", key="nav_home"):
+            st.session_state.page = "landing"
+            st.session_state.results = None
+            st.session_state.surprise = None
+            st.rerun()
 
     with col_search:
         if st.button("Search", key="nav_search"):
@@ -152,8 +178,7 @@ def show_navbar():
 
 # ══════════════════════════════════════════════════════════════
 # LANDING PAGE
-# A centered welcome screen with a single CTA button.
-# No nav bar on this page — keeps it clean and focused.
+# Clean welcome screen, no nav bar, single CTA button.
 # ══════════════════════════════════════════════════════════════
 if st.session_state.page == "landing":
 
@@ -172,49 +197,18 @@ if st.session_state.page == "landing":
         """, unsafe_allow_html=True)
 
         st.markdown("""
-            <h1 style='
-                color: white; font-size: 64px; font-weight: 800;
+            <h1 style='color: white; font-size: 64px; font-weight: 800;
                 margin: 0; padding: 0; text-align: center;
-                font-family: Poppins, sans-serif;
-            '>ForkScore</h1>
-            <p style='
-                color: #888888; font-size: 20px;
-                margin: 8px 0 24px 0; text-align: center;
-                font-family: Poppins, sans-serif;
-            '>Find Food. Score Better.</p>
-            <p style='
-                color: #CCCCCC; font-size: 16px; line-height: 1.8;
-                text-align: center; margin-bottom: 40px;
-                font-family: Poppins, sans-serif;
-            '>
+                font-family: Poppins, sans-serif;'>ForkScore</h1>
+            <p style='color: #888888; font-size: 20px; margin: 8px 0 24px 0;
+                text-align: center; font-family: Poppins, sans-serif;'>
+                Find Food. Score Better.
+            </p>
+            <p style='color: #CCCCCC; font-size: 16px; line-height: 1.8;
+                text-align: center; margin-bottom: 40px; font-family: Poppins, sans-serif;'>
                 Can't decide where to eat? Find the best meal for your budget. Every time.<br><br>
                 ForkScore ranks restaurants by <strong style="color: white;">quality and consistency</strong>.
             </p>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-            <style>
-            div.stButton > button {
-                background: linear-gradient(135deg, #D32F2F, #7B0000) !important;
-                color: white !important;
-                font-size: 18px !important;
-                font-weight: 700 !important;
-                border: none !important;
-                border-radius: 50px !important;
-                padding: 14px 48px !important;
-                min-width: 280px;
-                display: block;
-                margin: 0 auto;
-                cursor: pointer;
-                box-shadow: 0 4px 20px rgba(211, 47, 47, 0.5);
-                font-family: Poppins, sans-serif !important;
-            }
-            div.stButton > button:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 8px 30px rgba(211, 47, 47, 0.7);
-                color: white !important;
-            }
-            </style>
         """, unsafe_allow_html=True)
 
         col_a, col_b, col_c = st.columns([1, 2, 1])
@@ -232,17 +226,13 @@ if st.session_state.page == "landing":
 
 # ══════════════════════════════════════════════════════════════
 # SEARCH PAGE
-# Left sidebar has all filters. Main area shows results.
-# Nav bar at the top for navigation.
+# Sidebar has filters only. Main area shows results.
 # ══════════════════════════════════════════════════════════════
 elif st.session_state.page == "search":
 
     show_navbar()
 
-    # ── Sidebar filters ───────────────────────────────────────
-    # The sidebar contains only search filters now.
-    # No nav buttons here — those live in the top nav bar.
-
+    # Sidebar — filters only
     st.sidebar.markdown(f"""
         <img src='data:image/png;base64,{logo_b64}' width='60'/>
     """, unsafe_allow_html=True)
@@ -256,6 +246,8 @@ elif st.session_state.page == "search":
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Price Range**")
+
+    # Dollar signs: using plain strings, no backslashes needed
     price_options = {
         "$": 1,
         "$$": 2,
@@ -324,11 +316,7 @@ elif st.session_state.page == "search":
     st.sidebar.markdown("---")
     search = st.sidebar.button("🍴 Find Restaurants", use_container_width=True)
 
-    # ── Search logic ──────────────────────────────────────────
-    # When the user clicks Find Restaurants, we run the SQL
-    # query with their chosen filters and store results in
-    # session state so they persist when navigating pages.
-
+    # Search logic
     if search:
         if not selected_prices:
             st.warning("Please select at least one price range.")
@@ -393,7 +381,7 @@ elif st.session_state.page == "search":
             st.session_state.selected_city = selected_city
             st.session_state.surprise = None
 
-    # ── Results display ───────────────────────────────────────
+    # Results display
     if st.session_state.results is not None:
         results = st.session_state.results.copy()
         city_display = st.session_state.selected_city
@@ -425,14 +413,14 @@ elif st.session_state.page == "search":
                 "Rating", "Reviews", "Price", "Fork Score", "Open Time", "Close Time"
             ]
 
-            # Surprise Me
+            # Surprise Me / Reroll
             col_s1, col_s2, col_s3, col_s4 = st.columns([1, 2, 1, 1])
             with col_s2:
                 if st.button("🎲 Surprise Me!", use_container_width=True):
                     surprise = results.head(20).sample(1).iloc[0]
                     st.session_state.surprise = surprise
             with col_s3:
-                if st.button("Reroll", use_container_width=True):
+                if st.button("🔄 Reroll", use_container_width=True):
                     surprise = results.head(20).sample(1).iloc[0]
                     st.session_state.surprise = surprise
 
@@ -448,27 +436,32 @@ elif st.session_state.page == "search":
                 hours_display = f"🕐 Today: {open_fmt} — {close_fmt}" if open_fmt and close_fmt else "🕐 Hours not available"
 
                 st.markdown(f"""
-                    <div style='
-                        background: linear-gradient(135deg, #1A1A2E, #16213E);
+                    <div style='background: linear-gradient(135deg, #1A1A2E, #16213E);
                         border-radius: 16px; padding: 24px; margin-bottom: 24px;
                         border: 2px solid #D32F2F;
-                        box-shadow: 0 0 24px rgba(211, 47, 47, 0.4);
-                    '>
-                        <p style='color: #D32F2F; font-size: 14px; font-weight: 700; margin: 0 0 8px 0;
-                            font-family: Poppins, sans-serif; text-transform: uppercase; letter-spacing: 2px;'>
-                            🎲 Your ForkScore Pick
-                        </p>
+                        box-shadow: 0 0 24px rgba(211, 47, 47, 0.4);'>
+                        <p style='color: #D32F2F; font-size: 14px; font-weight: 700;
+                            margin: 0 0 8px 0; font-family: Poppins, sans-serif;
+                            text-transform: uppercase; letter-spacing: 2px;'>🎲 Your ForkScore Pick</p>
                         <div style='display: flex; justify-content: space-between; align-items: center;'>
                             <div>
-                                <h2 style='color: white; margin: 0; font-size: 26px; font-family: Poppins, sans-serif;'>{surprise["Name"]}</h2>
-                                <p style='color: #AAAAAA; margin: 4px 0; font-size: 15px; font-family: Poppins, sans-serif;'>📍 {surprise["Address"]}, {surprise["City"]}</p>
-                                <p style='color: #AAAAAA; margin: 4px 0; font-size: 15px; font-family: Poppins, sans-serif;'>⭐ {surprise["Rating"]} &nbsp;&nbsp; 💬 {int(surprise["Reviews"])} reviews &nbsp;&nbsp; 💰 {surprise["Price"]}</p>
-                                <p style='color: #AAAAAA; margin: 4px 0; font-size: 13px; font-family: Poppins, sans-serif;'>{hours_display}</p>
+                                <h2 style='color: white; margin: 0; font-size: 26px;
+                                    font-family: Poppins, sans-serif;'>{surprise["Name"]}</h2>
+                                <p style='color: #AAAAAA; margin: 4px 0; font-size: 15px;
+                                    font-family: Poppins, sans-serif;'>📍 {surprise["Address"]}, {surprise["City"]}</p>
+                                <p style='color: #AAAAAA; margin: 4px 0; font-size: 15px;
+                                    font-family: Poppins, sans-serif;'>⭐ {surprise["Rating"]} &nbsp;&nbsp;
+                                    💬 {int(surprise["Reviews"])} reviews &nbsp;&nbsp; 💰 {surprise["Price"]}</p>
+                                <p style='color: #AAAAAA; margin: 4px 0; font-size: 13px;
+                                    font-family: Poppins, sans-serif;'>{hours_display}</p>
                             </div>
                             <div style='text-align: center; min-width: 100px;'>
-                                <p style='color: {s_color}; font-size: 42px; font-weight: bold; margin: 0; font-family: Poppins, sans-serif;'>{score}</p>
-                                <p style='color: {s_color}; font-size: 13px; font-weight: bold; margin: 0; font-family: Poppins, sans-serif;'>{s_emoji} {s_label}</p>
-                                <p style='color: #666666; font-size: 11px; margin: 0; font-family: Poppins, sans-serif;'>Fork Score</p>
+                                <p style='color: {s_color}; font-size: 42px; font-weight: bold;
+                                    margin: 0; font-family: Poppins, sans-serif;'>{score}</p>
+                                <p style='color: {s_color}; font-size: 13px; font-weight: bold;
+                                    margin: 0; font-family: Poppins, sans-serif;'>{s_emoji} {s_label}</p>
+                                <p style='color: #666666; font-size: 11px; margin: 0;
+                                    font-family: Poppins, sans-serif;'>Fork Score</p>
                             </div>
                         </div>
                     </div>
@@ -476,10 +469,8 @@ elif st.session_state.page == "search":
 
             # Results header
             st.markdown(f"""
-                <div style='
-                    background: linear-gradient(135deg, #D32F2F, #7B0000);
-                    border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; text-align: center;
-                '>
+                <div style='background: linear-gradient(135deg, #D32F2F, #7B0000);
+                    border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; text-align: center;'>
                     <h2 style='color: white; margin: 0; font-size: 24px; font-family: Poppins, sans-serif;'>
                         🔥 {len(results)} restaurants ranked for you in {city_display}
                     </h2>
@@ -498,7 +489,7 @@ elif st.session_state.page == "search":
                     display: flex; justify-content: space-between; align-items: center;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
                     transition: transform 0.2s ease, box-shadow 0.2s ease, border-left 0.2s ease;
-                    border-left: 4px solid transparent; cursor: pointer;
+                    border-left: 4px solid transparent;
                 }
                 .restaurant-card:hover {
                     transform: translateY(-3px);
@@ -520,23 +511,30 @@ elif st.session_state.page == "search":
                 st.markdown(f"""
                     <div class='restaurant-card'>
                         <div>
-                            <h3 style='color: #1A1A1A; margin: 0; font-size: 22px; font-family: Poppins, sans-serif;'>{row["Name"]}</h3>
-                            <p style='color: #666666; margin: 4px 0; font-size: 16px; font-family: Poppins, sans-serif;'>📍 {row["Address"]}, {row["City"]}</p>
-                            <p style='color: #666666; margin: 4px 0; font-size: 16px; font-family: Poppins, sans-serif;'>⭐ {row["Rating"]} &nbsp;&nbsp; 💬 {int(row["Reviews"])} reviews &nbsp;&nbsp; 💰 {row["Price"]}</p>
-                            <p style='color: #888888; margin: 4px 0; font-size: 14px; font-family: Poppins, sans-serif;'>{hours_display}</p>
+                            <h3 style='color: #1A1A1A; margin: 0; font-size: 22px;
+                                font-family: Poppins, sans-serif;'>{row["Name"]}</h3>
+                            <p style='color: #666666; margin: 4px 0; font-size: 16px;
+                                font-family: Poppins, sans-serif;'>📍 {row["Address"]}, {row["City"]}</p>
+                            <p style='color: #666666; margin: 4px 0; font-size: 16px;
+                                font-family: Poppins, sans-serif;'>⭐ {row["Rating"]} &nbsp;&nbsp;
+                                💬 {int(row["Reviews"])} reviews &nbsp;&nbsp; 💰 {row["Price"]}</p>
+                            <p style='color: #888888; margin: 4px 0; font-size: 14px;
+                                font-family: Poppins, sans-serif;'>{hours_display}</p>
                         </div>
                         <div style='text-align: center; min-width: 90px;'>
-                            <p style='color: {score_color}; font-size: 36px; font-weight: bold; margin: 0; font-family: Poppins, sans-serif;'>{score}</p>
-                            <p style='color: {score_color}; font-size: 12px; font-weight: bold; margin: 0; font-family: Poppins, sans-serif;'>{score_emoji} {score_label}</p>
-                            <p style='color: #AAAAAA; font-size: 11px; margin: 0; font-family: Poppins, sans-serif;'>Fork Score</p>
+                            <p style='color: {score_color}; font-size: 36px; font-weight: bold;
+                                margin: 0; font-family: Poppins, sans-serif;'>{score}</p>
+                            <p style='color: {score_color}; font-size: 12px; font-weight: bold;
+                                margin: 0; font-family: Poppins, sans-serif;'>{score_emoji} {score_label}</p>
+                            <p style='color: #AAAAAA; font-size: 11px; margin: 0;
+                                font-family: Poppins, sans-serif;'>Fork Score</p>
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════
-# EXPLORE PAGE
-# Placeholder for now — map and charts will be added here next.
+# EXPLORE PAGE — placeholder, charts and map go here next
 # ══════════════════════════════════════════════════════════════
 elif st.session_state.page == "explore":
 
@@ -547,21 +545,20 @@ elif st.session_state.page == "explore":
             font-family: Poppins, sans-serif; margin-bottom: 8px;'>
             📊 Explore
         </h2>
-        <p style='color: #AAAAAA; font-size: 16px; font-family: Poppins, sans-serif; margin-bottom: 32px;'>
-            Interactive map and charts coming soon. Search for a city first, then come back here to explore.
+        <p style='color: #AAAAAA; font-size: 16px;
+            font-family: Poppins, sans-serif; margin-bottom: 32px;'>
+            Interactive map and charts — search for a city first, then explore the data here.
         </p>
     """, unsafe_allow_html=True)
 
     if st.session_state.results is None:
-        st.info("👈 Go to Search first and find restaurants in a city — then come back here to explore the data.")
+        st.info("👈 Go to Search first and find restaurants in a city — then come back here to explore.")
     else:
-        st.success(f"✅ You have results loaded for **{st.session_state.selected_city}**. Charts and map will appear here soon!")
+        st.success(f"✅ Results loaded for **{st.session_state.selected_city}**. Charts and map coming soon!")
 
 
 # ══════════════════════════════════════════════════════════════
 # ABOUT PAGE
-# Explains the Fork Score formula. Same content as before,
-# now accessed via the nav bar instead of a sidebar button.
 # ══════════════════════════════════════════════════════════════
 elif st.session_state.page == "about":
 
@@ -582,89 +579,65 @@ elif st.session_state.page == "about":
             font-family: Poppins, sans-serif; margin-bottom: 8px;'>
             What is the Fork Score?
         </h2>
-        <p style='color: #AAAAAA; font-size: 16px; font-family: Poppins, sans-serif; margin-bottom: 32px;'>
-            Every restaurant on ForkScore gets a Fork Score — a transparent, data-driven number that tells you
-            how good and how trustworthy a restaurant actually is.
+        <p style='color: #AAAAAA; font-size: 16px;
+            font-family: Poppins, sans-serif; margin-bottom: 32px;'>
+            Every restaurant on ForkScore gets a Fork Score — a transparent, data-driven number
+            that tells you how good and how trustworthy a restaurant actually is.
         </p>
     """, unsafe_allow_html=True)
 
     st.markdown("""
         <div class='info-card'>
             <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
-                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
-                The Problem with Yelp
-            </h3>
-            <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0; font-family: Poppins, sans-serif;'>
+                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>The Problem with Yelp</h3>
+            <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0;
+                font-family: Poppins, sans-serif;'>
                 Yelp ranks restaurants by popularity, advertising spend, and user engagement — not actual quality.
                 A mediocre restaurant with 3,000 reviews consistently outranks a genuinely great one with 80 reviews.
                 The algorithm is a black box. Nobody outside Yelp knows exactly why one restaurant ranks above another.
             </p>
         </div>
-    """, unsafe_allow_html=True)
 
-    st.markdown("""
         <div class='info-card'>
             <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
-                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
-                The Formula
-            </h3>
-            <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0; font-family: Poppins, sans-serif;'>
+                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>The Formula</h3>
+            <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;
+                font-family: Poppins, sans-serif;'>
                 The Fork Score combines two factors — rating and review reliability — into one transparent number.
             </p>
             <div style='background: #2A2A2A; border-radius: 8px; padding: 16px 24px;
                 text-align: center; margin-bottom: 16px;'>
-                <p style='color: white; font-size: 22px; font-weight: 700; margin: 0; font-family: Courier New, monospace;'>
+                <p style='color: white; font-size: 22px; font-weight: 700; margin: 0;
+                    font-family: Courier New, monospace;'>
                     Fork Score = Rating × Reliability
                 </p>
             </div>
-            <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0; font-family: Poppins, sans-serif;'>
+            <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0;
+                font-family: Poppins, sans-serif;'>
                 <strong style='color: white;'>Rating</strong> — the raw Yelp star rating from 1.0 to 5.0.<br><br>
-                <strong style='color: white;'>Reliability</strong> — a number from 0 to 1 based on how many people
-                have reviewed the restaurant. A restaurant with 8 reviews gets 0.35.
-                One with 500+ reviews gets 1.0.
+                <strong style='color: white;'>Reliability</strong> — a log-scaled score from 0 to 1 based on
+                review count. A restaurant with 8 reviews gets 0.35. One with 500+ reviews gets 1.0.
             </p>
         </div>
-    """, unsafe_allow_html=True)
 
-    st.markdown("""
         <div class='info-card'>
             <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
-                margin: 0 0 16px 0; font-family: Poppins, sans-serif;'>
-                Reliability by Review Count
-            </h3>
-    """, unsafe_allow_html=True)
-
-    reliability_df = pd.DataFrame({
-        "Reviews": ["8", "50", "150", "400", "500+"],
-        "Reliability Score": ["0.35", "0.63", "0.81", "0.96", "1.00"],
-        "Trust Level": ["Barely proven", "Getting reliable", "Fairly reliable", "Very reliable", "Fully trusted ✓"]
-    })
-    st.dataframe(reliability_df, use_container_width=True, hide_index=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("""
-        <div class='info-card'>
-            <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
-                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
-                Why Log Scaling?
-            </h3>
-            <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0; font-family: Poppins, sans-serif;'>
-                Trust does not grow at a constant rate as reviews accumulate. Going from 10 to 50 reviews is a
-                big deal — the restaurant is becoming proven. Going from 450 to 490 reviews barely matters.
-                Log scaling grows fast at first and slows down as reviews accumulate —
-                accurately reflecting how trust actually builds over time.
+                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>Why Log Scaling?</h3>
+            <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0;
+                font-family: Poppins, sans-serif;'>
+                Trust does not grow at a constant rate as reviews accumulate. Going from 10 to 50 reviews
+                is a big deal — the restaurant is becoming proven. Going from 450 to 490 reviews barely matters.
+                Log scaling grows fast at first and slows down as reviews accumulate, accurately reflecting
+                how trust actually builds over time.
             </p>
         </div>
-    """, unsafe_allow_html=True)
 
-    st.markdown("""
         <div class='info-card'>
             <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
-                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>
-                How Price Works
-            </h3>
-            <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0; font-family: Poppins, sans-serif;'>
-                Price is not part of the Fork Score formula. Instead you set your budget first and the Fork Score
+                margin: 0 0 12px 0; font-family: Poppins, sans-serif;'>How Price Works</h3>
+            <p style='color: #CCCCCC; font-size: 15px; line-height: 1.7; margin: 0;
+                font-family: Poppins, sans-serif;'>
+                Price is not part of the Fork Score formula. You set your budget first and the Fork Score
                 ranks every restaurant within that budget by quality and consistency.
             </p>
         </div>
@@ -673,9 +646,7 @@ elif st.session_state.page == "about":
     st.markdown("""
         <div class='info-card'>
             <h3 style='color: #D32F2F; font-size: 20px; font-weight: 700;
-                margin: 0 0 16px 0; font-family: Poppins, sans-serif;'>
-                Fork Score in Action
-            </h3>
+                margin: 0 0 16px 0; font-family: Poppins, sans-serif;'>Fork Score in Action</h3>
     """, unsafe_allow_html=True)
 
     example_df = pd.DataFrame({
@@ -696,10 +667,8 @@ elif st.session_state.page == "about":
     """, unsafe_allow_html=True)
 
     st.markdown("""
-        <div style='
-            background: linear-gradient(135deg, #D32F2F, #7B0000);
-            border-radius: 12px; padding: 24px; margin-top: 24px; text-align: center;
-        '>
+        <div style='background: linear-gradient(135deg, #D32F2F, #7B0000);
+            border-radius: 12px; padding: 24px; margin-top: 24px; text-align: center;'>
             <h3 style='color: white; font-size: 20px; font-weight: 700;
                 margin: 0 0 8px 0; font-family: Poppins, sans-serif;'>
                 No black box. No ads. No sponsored results.
