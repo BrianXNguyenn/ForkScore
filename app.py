@@ -25,7 +25,7 @@ st.markdown("""
         font-family: 'Poppins', sans-serif !important;
     }
 
-    /* ALL action buttons red */
+    /* ALL buttons red */
     div.stButton > button {
         background: linear-gradient(135deg, #D32F2F, #7B0000) !important;
         color: white !important;
@@ -44,25 +44,6 @@ st.markdown("""
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 20px rgba(211, 47, 47, 0.6) !important;
         color: white !important;
-    }
-
-    /* Nav links — plain bold text, lights up on hover */
-    .nav-link {
-        color: #AAAAAA;
-        font-size: 16px;
-        font-weight: 600;
-        font-family: Poppins, sans-serif;
-        text-decoration: none;
-        padding: 8px 4px;
-        cursor: pointer;
-        transition: color 0.2s ease;
-        background: none;
-        border: none;
-        display: inline-block;
-    }
-    .nav-link:hover {
-        color: white;
-        text-decoration: none;
     }
 
     /* Hide sidebar collapse tooltip */
@@ -87,23 +68,6 @@ if "page" not in st.session_state:
 if "surprise" not in st.session_state:
     st.session_state.surprise = None
 
-# ── HANDLE QUERY PARAMS FOR NAV ───────────────────────────────
-# HTML links set ?nav=search in the URL. We read that here
-# at the top of every rerun and update session state.
-# This is how we navigate without using st.button for nav.
-params = st.query_params
-if "nav" in params:
-    nav_target = params["nav"]
-    if nav_target in ["home", "search", "explore", "about"]:
-        if nav_target == "home":
-            st.session_state.page = "landing"
-            st.session_state.results = None
-            st.session_state.surprise = None
-        else:
-            st.session_state.page = nav_target
-    st.query_params.clear()
-    st.rerun()
-
 # ── HELPERS ───────────────────────────────────────────────────
 def load_image_b64(path):
     with open(path, "rb") as f:
@@ -127,16 +91,16 @@ def format_time(t):
     return t
 
 # ── NAV BAR ───────────────────────────────────────────────────
-# Uses pure HTML anchor tags with ?nav=page query params.
-# No st.button — so no red styling, no squishing, no overrides.
-# Clicking a link sets the query param, triggers a rerun,
-# and the handler above updates session state.
+# Logo on left, 4 nav buttons on right.
+# Columns: logo gets 5, then 4 nav buttons get 1 each.
+# No spacer — keeps buttons from squishing on search page.
 
 def show_navbar():
-    st.markdown(f"""
-        <div style='display:flex; justify-content:space-between; align-items:center;
-            padding:12px 0 8px 0;'>
-            <div style='display:flex; align-items:center; gap:18px;'>
+    col_logo, col_home, col_search, col_explore, col_about = st.columns([5, 1, 1, 1, 1])
+
+    with col_logo:
+        st.markdown(f"""
+            <div style='display:flex; align-items:center; gap:18px; padding:10px 0;'>
                 <img src='data:image/png;base64,{logo_b64}' width='70'/>
                 <div>
                     <p style='color:white; font-size:36px; font-weight:800;
@@ -145,14 +109,30 @@ def show_navbar():
                         font-family:Poppins,sans-serif;'>Find Food. Score Better.</p>
                 </div>
             </div>
-            <div style='display:flex; gap:8px; align-items:center;'>
-                <a href='?nav=home' class='nav-link'>Home</a>
-                <a href='?nav=search' class='nav-link'>Search</a>
-                <a href='?nav=explore' class='nav-link'>Explore</a>
-                <a href='?nav=about' class='nav-link'>About</a>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+
+    with col_home:
+        if st.button("Home", key="nav_home"):
+            st.session_state.page = "landing"
+            st.session_state.results = None
+            st.session_state.surprise = None
+            st.rerun()
+
+    with col_search:
+        if st.button("Search", key="nav_search"):
+            st.session_state.page = "search"
+            st.rerun()
+
+    with col_explore:
+        if st.button("Explore", key="nav_explore"):
+            st.session_state.page = "explore"
+            st.rerun()
+
+    with col_about:
+        if st.button("About", key="nav_about"):
+            st.session_state.page = "about"
+            st.rerun()
+
     st.divider()
 
 
@@ -353,6 +333,7 @@ elif st.session_state.page == "search":
             results.columns = ["Name","City","Address","Latitude","Longitude",
                                "Rating","Reviews","Price","Fork Score","Open Time","Close Time"]
 
+            # Single button that switches label after first click
             st.markdown("---")
             col_s1, col_s2, col_s3 = st.columns([2, 6, 2])
             with col_s2:
