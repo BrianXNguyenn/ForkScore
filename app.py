@@ -25,12 +25,8 @@ st.markdown("""
         font-family: 'Poppins', sans-serif !important;
     }
 
-    /* Hide sidebar collapse arrow tooltip */
-    [data-testid="collapsedControl"] { display: none !important; }
-    [data-testid="stSidebarCollapseButton"] { display: none !important; }
-
-    /* ── Action buttons (Find Restaurants, Surprise Me, etc) ── */
-    .action-btn > div > button {
+    /* ALL buttons red by default */
+    div.stButton > button {
         background: linear-gradient(135deg, #D32F2F, #7B0000) !important;
         color: white !important;
         font-size: 16px !important;
@@ -44,51 +40,36 @@ st.markdown("""
         transition: transform 0.2s ease, box-shadow 0.2s ease !important;
         width: 100% !important;
     }
-    .action-btn > div > button:hover {
+    div.stButton > button:hover {
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 20px rgba(211, 47, 47, 0.6) !important;
         color: white !important;
     }
 
-    /* ── Nav buttons — plain bold text, no background ── */
-    .nav-btn > div > button {
+    /* Nav buttons override — plain text, no background, no border */
+    .nav-btn div.stButton > button {
         background: transparent !important;
-        color: #CCCCCC !important;
+        color: #AAAAAA !important;
         font-size: 16px !important;
         font-weight: 600 !important;
         border: none !important;
         border-radius: 6px !important;
         padding: 8px 18px !important;
         box-shadow: none !important;
-        font-family: Poppins, sans-serif !important;
-        letter-spacing: 0.3px !important;
         width: auto !important;
-        min-width: 0 !important;
-    }
-    .nav-btn > div > button:hover {
-        background: rgba(255,255,255,0.07) !important;
-        color: white !important;
         transform: none !important;
+    }
+    .nav-btn div.stButton > button:hover {
+        background: transparent !important;
+        color: white !important;
         box-shadow: none !important;
+        transform: none !important;
+        border: none !important;
     }
 
-    /* Sidebar action button */
-    section[data-testid="stSidebar"] div.stButton > button {
-        background: linear-gradient(135deg, #D32F2F, #7B0000) !important;
-        color: white !important;
-        font-size: 16px !important;
-        font-weight: 700 !important;
-        border: none !important;
-        border-radius: 50px !important;
-        padding: 10px 28px !important;
-        box-shadow: 0 4px 14px rgba(211,47,47,0.4) !important;
-        width: 100% !important;
-    }
-    section[data-testid="stSidebar"] div.stButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(211,47,47,0.6) !important;
-        color: white !important;
-    }
+    /* Hide sidebar collapse tooltip */
+    [data-testid="collapsedControl"] { display: none !important; }
+    [data-testid="stSidebarCollapseButton"] { display: none !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -131,9 +112,6 @@ def format_time(t):
     return t
 
 # ── NAV BAR ───────────────────────────────────────────────────
-# Logo + title on left. Nav links on right using .nav-btn CSS
-# class so they look like plain text, not red action buttons.
-
 def show_navbar():
     col_logo, col_spacer, col_home, col_search, col_explore, col_about = st.columns([5, 2, 1, 1, 1, 1])
 
@@ -214,11 +192,9 @@ if st.session_state.page == "landing":
 
         col_a, col_b, col_c = st.columns([1, 2, 1])
         with col_b:
-            st.markdown('<div class="action-btn">', unsafe_allow_html=True)
             if st.button("🍴 Find My Next Meal", use_container_width=True, key="landing_btn"):
                 st.session_state.page = "search"
                 st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("""
             <p style='color:#555555; font-size:13px; text-align:center; margin-top:16px;'>
@@ -234,7 +210,6 @@ elif st.session_state.page == "search":
 
     show_navbar()
 
-    # Sidebar
     st.sidebar.markdown(f"""
         <img src='data:image/png;base64,{logo_b64}' width='60'/>
     """, unsafe_allow_html=True)
@@ -248,17 +223,16 @@ elif st.session_state.page == "search":
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Price Range**")
-
-    # Each price checkbox gets a unique key and explicit string label
-    p1 = st.sidebar.checkbox("$",    value=True, key="chk_price_1")
-    p2 = st.sidebar.checkbox("$$",   value=True, key="chk_price_2")
-    p3 = st.sidebar.checkbox("$$$",  value=True, key="chk_price_3")
-    p4 = st.sidebar.checkbox("$$$$", value=True, key="chk_price_4")
+    price_options = {
+        "\$": 1,
+        "\$\$": 2,
+        "\$\$\$": 3,
+        "\$\$\$\$": 4
+    }
     selected_prices = []
-    if p1: selected_prices.append(1)
-    if p2: selected_prices.append(2)
-    if p3: selected_prices.append(3)
-    if p4: selected_prices.append(4)
+    for label, value in price_options.items():
+        if st.sidebar.checkbox(label, value=True):
+            selected_prices.append(value)
 
     st.sidebar.markdown("---")
     cuisines_query = """
@@ -312,11 +286,8 @@ elif st.session_state.page == "search":
     st.sidebar.markdown("---")
     open_now = st.sidebar.toggle("Open Now")
     st.sidebar.markdown("---")
-
-    # Find Restaurants button in sidebar — uses sidebar CSS
     search = st.sidebar.button("🍴 Find Restaurants", use_container_width=True, key="find_btn")
 
-    # Search logic
     if search:
         if not selected_prices:
             st.warning("Please select at least one price range.")
@@ -366,7 +337,6 @@ elif st.session_state.page == "search":
             st.session_state.selected_city = selected_city
             st.session_state.surprise = None
 
-    # Results
     if st.session_state.results is not None:
         results = st.session_state.results.copy()
         city_display = st.session_state.selected_city
@@ -388,24 +358,18 @@ elif st.session_state.page == "search":
             results.columns = ["Name","City","Address","Latitude","Longitude",
                                "Rating","Reviews","Price","Fork Score","Open Time","Close Time"]
 
-            # Surprise Me / Reroll — wrapped in action-btn div
             st.markdown("---")
             col_s1, col_s2, col_s3, col_s4 = st.columns([2, 3, 3, 2])
             with col_s2:
-                st.markdown('<div class="action-btn">', unsafe_allow_html=True)
                 if st.button("🎲 Surprise Me!", use_container_width=True, key="surprise_btn"):
                     surprise = results.head(20).sample(1).iloc[0]
                     st.session_state.surprise = surprise
-                st.markdown('</div>', unsafe_allow_html=True)
             with col_s3:
-                st.markdown('<div class="action-btn">', unsafe_allow_html=True)
-                if st.button("Reroll", use_container_width=True, key="reroll_btn"):
+                if st.button("🔄 Reroll", use_container_width=True, key="reroll_btn"):
                     surprise = results.head(20).sample(1).iloc[0]
                     st.session_state.surprise = surprise
-                st.markdown('</div>', unsafe_allow_html=True)
             st.markdown("---")
 
-            # Surprise card
             if st.session_state.get("surprise") is not None:
                 surprise = st.session_state.surprise
                 score = surprise["Fork Score"]
@@ -425,29 +389,20 @@ elif st.session_state.page == "search":
                             🎲 Your ForkScore Pick</p>
                         <div style='display:flex; justify-content:space-between; align-items:center;'>
                             <div>
-                                <h2 style='color:white; margin:0; font-size:26px;
-                                    font-family:Poppins,sans-serif;'>{surprise["Name"]}</h2>
-                                <p style='color:#AAAAAA; margin:4px 0; font-size:15px;
-                                    font-family:Poppins,sans-serif;'>📍 {surprise["Address"]}, {surprise["City"]}</p>
-                                <p style='color:#AAAAAA; margin:4px 0; font-size:15px;
-                                    font-family:Poppins,sans-serif;'>⭐ {surprise["Rating"]} &nbsp;&nbsp;
-                                    💬 {int(surprise["Reviews"])} reviews &nbsp;&nbsp; 💰 {surprise["Price"]}</p>
-                                <p style='color:#AAAAAA; margin:4px 0; font-size:13px;
-                                    font-family:Poppins,sans-serif;'>{hours_display}</p>
+                                <h2 style='color:white; margin:0; font-size:26px; font-family:Poppins,sans-serif;'>{surprise["Name"]}</h2>
+                                <p style='color:#AAAAAA; margin:4px 0; font-size:15px; font-family:Poppins,sans-serif;'>📍 {surprise["Address"]}, {surprise["City"]}</p>
+                                <p style='color:#AAAAAA; margin:4px 0; font-size:15px; font-family:Poppins,sans-serif;'>⭐ {surprise["Rating"]} &nbsp;&nbsp; 💬 {int(surprise["Reviews"])} reviews &nbsp;&nbsp; 💰 {surprise["Price"]}</p>
+                                <p style='color:#AAAAAA; margin:4px 0; font-size:13px; font-family:Poppins,sans-serif;'>{hours_display}</p>
                             </div>
                             <div style='text-align:center; min-width:100px;'>
-                                <p style='color:{s_color}; font-size:42px; font-weight:bold;
-                                    margin:0; font-family:Poppins,sans-serif;'>{score}</p>
-                                <p style='color:{s_color}; font-size:13px; font-weight:bold;
-                                    margin:0; font-family:Poppins,sans-serif;'>{s_emoji} {s_label}</p>
-                                <p style='color:#666666; font-size:11px; margin:0;
-                                    font-family:Poppins,sans-serif;'>Fork Score</p>
+                                <p style='color:{s_color}; font-size:42px; font-weight:bold; margin:0; font-family:Poppins,sans-serif;'>{score}</p>
+                                <p style='color:{s_color}; font-size:13px; font-weight:bold; margin:0; font-family:Poppins,sans-serif;'>{s_emoji} {s_label}</p>
+                                <p style='color:#666666; font-size:11px; margin:0; font-family:Poppins,sans-serif;'>Fork Score</p>
                             </div>
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
 
-            # Results header
             st.markdown(f"""
                 <div style='background:linear-gradient(135deg,#D32F2F,#7B0000);
                     border-radius:12px; padding:20px 24px; margin-bottom:24px; text-align:center;'>
@@ -460,7 +415,6 @@ elif st.session_state.page == "search":
                 </div>
             """, unsafe_allow_html=True)
 
-            # Restaurant cards
             st.markdown("""
                 <style>
                 .restaurant-card {
@@ -491,23 +445,15 @@ elif st.session_state.page == "search":
                 st.markdown(f"""
                     <div class='restaurant-card'>
                         <div>
-                            <h3 style='color:#1A1A1A; margin:0; font-size:22px;
-                                font-family:Poppins,sans-serif;'>{row["Name"]}</h3>
-                            <p style='color:#666666; margin:4px 0; font-size:16px;
-                                font-family:Poppins,sans-serif;'>📍 {row["Address"]}, {row["City"]}</p>
-                            <p style='color:#666666; margin:4px 0; font-size:16px;
-                                font-family:Poppins,sans-serif;'>⭐ {row["Rating"]} &nbsp;&nbsp;
-                                💬 {int(row["Reviews"])} reviews &nbsp;&nbsp; 💰 {row["Price"]}</p>
-                            <p style='color:#888888; margin:4px 0; font-size:14px;
-                                font-family:Poppins,sans-serif;'>{hours_display}</p>
+                            <h3 style='color:#1A1A1A; margin:0; font-size:22px; font-family:Poppins,sans-serif;'>{row["Name"]}</h3>
+                            <p style='color:#666666; margin:4px 0; font-size:16px; font-family:Poppins,sans-serif;'>📍 {row["Address"]}, {row["City"]}</p>
+                            <p style='color:#666666; margin:4px 0; font-size:16px; font-family:Poppins,sans-serif;'>⭐ {row["Rating"]} &nbsp;&nbsp; 💬 {int(row["Reviews"])} reviews &nbsp;&nbsp; 💰 {row["Price"]}</p>
+                            <p style='color:#888888; margin:4px 0; font-size:14px; font-family:Poppins,sans-serif;'>{hours_display}</p>
                         </div>
                         <div style='text-align:center; min-width:90px;'>
-                            <p style='color:{score_color}; font-size:36px; font-weight:bold;
-                                margin:0; font-family:Poppins,sans-serif;'>{score}</p>
-                            <p style='color:{score_color}; font-size:12px; font-weight:bold;
-                                margin:0; font-family:Poppins,sans-serif;'>{score_emoji} {score_label}</p>
-                            <p style='color:#AAAAAA; font-size:11px; margin:0;
-                                font-family:Poppins,sans-serif;'>Fork Score</p>
+                            <p style='color:{score_color}; font-size:36px; font-weight:bold; margin:0; font-family:Poppins,sans-serif;'>{score}</p>
+                            <p style='color:{score_color}; font-size:12px; font-weight:bold; margin:0; font-family:Poppins,sans-serif;'>{score_emoji} {score_label}</p>
+                            <p style='color:#AAAAAA; font-size:11px; margin:0; font-family:Poppins,sans-serif;'>Fork Score</p>
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
@@ -552,8 +498,7 @@ elif st.session_state.page == "about":
 
     st.markdown("""
         <h2 style='color:white; font-size:36px; font-weight:800;
-            font-family:Poppins,sans-serif; margin-bottom:8px;'>
-            What is the Fork Score?</h2>
+            font-family:Poppins,sans-serif; margin-bottom:8px;'>What is the Fork Score?</h2>
         <p style='color:#AAAAAA; font-size:16px; font-family:Poppins,sans-serif; margin-bottom:32px;'>
             Every restaurant on ForkScore gets a Fork Score — a transparent, data-driven number
             that tells you how good and how trustworthy a restaurant actually is.
