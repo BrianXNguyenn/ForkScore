@@ -354,13 +354,10 @@ elif st.session_state.page == "search":
                                "Rating","Reviews","Price","Fork Score","Open Time","Close Time"]
 
             st.markdown("---")
-            col_s1, col_s2, col_s3, col_s4 = st.columns([2, 3, 3, 2])
+            col_s1, col_s2, col_s3 = st.columns([2, 6, 2])
             with col_s2:
-                if st.button("🎲 Surprise Me!", use_container_width=True, key="surprise_btn"):
-                    surprise = results.head(20).sample(1).iloc[0]
-                    st.session_state.surprise = surprise
-            with col_s3:
-                if st.button("🔄 Reroll", use_container_width=True, key="reroll_btn"):
+                btn_label = "Reroll" if st.session_state.get("surprise") is not None else "🎲 Surprise Me!"
+                if st.button(btn_label, use_container_width=True, key="surprise_btn"):
                     surprise = results.head(20).sample(1).iloc[0]
                     st.session_state.surprise = surprise
             st.markdown("---")
