@@ -25,7 +25,7 @@ st.markdown("""
         font-family: 'Poppins', sans-serif !important;
     }
 
-    /* ALL buttons red by default */
+    /* ALL action buttons red */
     div.stButton > button {
         background: linear-gradient(135deg, #D32F2F, #7B0000) !important;
         color: white !important;
@@ -46,25 +46,23 @@ st.markdown("""
         color: white !important;
     }
 
-    /* Nav buttons override — plain text, no background, no border */
-    .nav-btn div.stButton > button {
-        background: transparent !important;
-        color: #AAAAAA !important;
-        font-size: 16px !important;
-        font-weight: 600 !important;
-        border: none !important;
-        border-radius: 6px !important;
-        padding: 8px 18px !important;
-        box-shadow: none !important;
-        width: auto !important;
-        transform: none !important;
+    /* Nav links — plain bold text, lights up on hover */
+    .nav-link {
+        color: #AAAAAA;
+        font-size: 16px;
+        font-weight: 600;
+        font-family: Poppins, sans-serif;
+        text-decoration: none;
+        padding: 8px 4px;
+        cursor: pointer;
+        transition: color 0.2s ease;
+        background: none;
+        border: none;
+        display: inline-block;
     }
-    .nav-btn div.stButton > button:hover {
-        background: transparent !important;
-        color: white !important;
-        box-shadow: none !important;
-        transform: none !important;
-        border: none !important;
+    .nav-link:hover {
+        color: white;
+        text-decoration: none;
     }
 
     /* Hide sidebar collapse tooltip */
@@ -89,6 +87,23 @@ if "page" not in st.session_state:
 if "surprise" not in st.session_state:
     st.session_state.surprise = None
 
+# ── HANDLE QUERY PARAMS FOR NAV ───────────────────────────────
+# HTML links set ?nav=search in the URL. We read that here
+# at the top of every rerun and update session state.
+# This is how we navigate without using st.button for nav.
+params = st.query_params
+if "nav" in params:
+    nav_target = params["nav"]
+    if nav_target in ["home", "search", "explore", "about"]:
+        if nav_target == "home":
+            st.session_state.page = "landing"
+            st.session_state.results = None
+            st.session_state.surprise = None
+        else:
+            st.session_state.page = nav_target
+    st.query_params.clear()
+    st.rerun()
+
 # ── HELPERS ───────────────────────────────────────────────────
 def load_image_b64(path):
     with open(path, "rb") as f:
@@ -112,12 +127,16 @@ def format_time(t):
     return t
 
 # ── NAV BAR ───────────────────────────────────────────────────
-def show_navbar():
-    col_logo, col_spacer, col_home, col_search, col_explore, col_about = st.columns([5, 2, 1, 1, 1, 1])
+# Uses pure HTML anchor tags with ?nav=page query params.
+# No st.button — so no red styling, no squishing, no overrides.
+# Clicking a link sets the query param, triggers a rerun,
+# and the handler above updates session state.
 
-    with col_logo:
-        st.markdown(f"""
-            <div style='display:flex; align-items:center; gap:18px; padding:10px 0;'>
+def show_navbar():
+    st.markdown(f"""
+        <div style='display:flex; justify-content:space-between; align-items:center;
+            padding:12px 0 8px 0;'>
+            <div style='display:flex; align-items:center; gap:18px;'>
                 <img src='data:image/png;base64,{logo_b64}' width='70'/>
                 <div>
                     <p style='color:white; font-size:36px; font-weight:800;
@@ -126,38 +145,14 @@ def show_navbar():
                         font-family:Poppins,sans-serif;'>Find Food. Score Better.</p>
                 </div>
             </div>
-        """, unsafe_allow_html=True)
-
-    with col_home:
-        st.markdown('<div class="nav-btn">', unsafe_allow_html=True)
-        if st.button("Home", key="nav_home"):
-            st.session_state.page = "landing"
-            st.session_state.results = None
-            st.session_state.surprise = None
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with col_search:
-        st.markdown('<div class="nav-btn">', unsafe_allow_html=True)
-        if st.button("Search", key="nav_search"):
-            st.session_state.page = "search"
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with col_explore:
-        st.markdown('<div class="nav-btn">', unsafe_allow_html=True)
-        if st.button("Explore", key="nav_explore"):
-            st.session_state.page = "explore"
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with col_about:
-        st.markdown('<div class="nav-btn">', unsafe_allow_html=True)
-        if st.button("About", key="nav_about"):
-            st.session_state.page = "about"
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
+            <div style='display:flex; gap:8px; align-items:center;'>
+                <a href='?nav=home' class='nav-link'>Home</a>
+                <a href='?nav=search' class='nav-link'>Search</a>
+                <a href='?nav=explore' class='nav-link'>Explore</a>
+                <a href='?nav=about' class='nav-link'>About</a>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
     st.divider()
 
 
