@@ -96,7 +96,7 @@ def format_time(t):
 # No spacer — keeps buttons from squishing on search page.
 
 def show_navbar():
-    col_logo, col_home, col_search, col_explore, col_about = st.columns([5, 1, 1, 1, 1])
+    col_logo, col_home, col_search, col_explore, col_about = st.columns([3, 1, 1, 1, 1])
 
     with col_logo:
         st.markdown(f"""
@@ -450,7 +450,76 @@ elif st.session_state.page == "explore":
     if st.session_state.results is None:
         st.info("👈 Go to Search first and find restaurants in a city — then come back here to explore.")
     else:
-        st.success(f"✅ Results loaded for **{st.session_state.selected_city}**. Charts and map coming soon!")
+        results = st.session_state.results.copy()
+        city_display = st.session_state.selected_city
+
+        results["price_level"] = results["price_level"].map({1:"$",2:"$$",3:"$$$",4:"$$$$"}) if results["price_level"].dtype != object else results["price_level"]
+
+        # Add score tier column for color coding
+        def score_tier(s):
+            if s >= 4.0:
+                return "Excellent (4.0+)"
+            elif s >= 3.0:
+                return "Great (3.0+)"
+            else:
+                return "Good (below 3.0)"
+
+        results["Score Tier"] = results["fork_score"].apply(score_tier)
+
+        # ── MAP ───────────────────────────────────────────────
+        st.markdown(f"""
+            <h3 style='color:white; font-size:24px; font-weight:700;
+                font-family:Poppins,sans-serif; margin:24px 0 8px 0;'>
+                📍 Restaurant Map — {city_display}
+            </h3>
+            <p style='color:#AAAAAA; font-size:14px; font-family:Poppins,sans-serif; margin-bottom:16px;'>
+                Dot size = number of reviews. Color = Fork Score tier. Hover for details.
+            </p>
+        """, unsafe_allow_html=True)
+
+        map_df = results.dropna(subset=["latitude", "longitude"])
+
+        fig_map = px.scatter_mapbox(
+            map_df,
+            lat="latitude",
+            lon="longitude",
+            color="Score Tier",
+            size="review_count",
+            size_max=20,
+            hover_name="name",
+            hover_data={
+                "address": True,
+                "overall_rating": True,
+                "price_level": True,
+                "fork_score": True,
+                "latitude": False,
+                "longitude": False,
+                "Score Tier": False,
+                "review_count": True
+            },
+            color_discrete_map={
+                "Excellent (4.0+)": "#2E7D32",
+                "Great (3.0+)": "#F9A825",
+                "Good (below 3.0)": "#D32F2F"
+            },
+            mapbox_style="carto-darkmatter",
+            zoom=11,
+            height=550
+        )
+
+        fig_map.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=0, r=0, t=0, b=0),
+            legend=dict(
+                font=dict(color="white", size=13),
+                bgcolor="rgba(30,30,30,0.8)",
+                bordercolor="rgba(255,255,255,0.1)",
+                borderwidth=1
+            )
+        )
+
+        st.plotly_chart(fig_map, use_container_width=True)
 
 
 # ══════════════════════════════════════════════════════════════
