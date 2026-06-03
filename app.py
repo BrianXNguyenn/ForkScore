@@ -522,6 +522,110 @@ elif st.session_state.page == "explore":
         st.plotly_chart(fig_map, use_container_width=True)
 
 
+        # ── TOP CUISINES BAR CHART ────────────────────────────
+        st.markdown("""
+            <h3 style='color:white; font-size:24px; font-weight:700;
+                font-family:Poppins,sans-serif; margin:40px 0 8px 0;'>
+                🍽️ Top Cuisines by Fork Score
+            </h3>
+            <p style='color:#AAAAAA; font-size:14px; font-family:Poppins,sans-serif; margin-bottom:16px;'>
+                Average Fork Score by cuisine type in this city. Only cuisines with 3+ restaurants shown.
+            </p>
+        """, unsafe_allow_html=True)
+
+        cuisine_query = """
+            SELECT c.cuisine_type, AVG(p.fork_score) as avg_score, COUNT(*) as count
+            FROM restaurants r
+            JOIN pricing p ON r.id = p.restaurant_id
+            JOIN categories c ON r.id = c.restaurant_id
+            WHERE r.city = %s
+            AND c.cuisine_type IN (
+                'Afghan','African','American','Arabian','Argentine','Armenian',
+                'Asian Fusion','Australian','Austrian','Bangladeshi','Barbeque',
+                'Belgian','Brasseries','Brazilian','British','Burmese',
+                'Cajun','Cambodian','Caribbean','Chinese','Colombian','Cuban',
+                'Czech','Dominican','Egyptian','Ethiopian','Filipino',
+                'Fish & Chips','Fondue','French','Gastropubs','German','Greek',
+                'Halal','Hawaiian','Himalayan','Hot Dogs','Hot Pot','Hungarian',
+                'Indian','Indonesian','Irish','Italian','Japanese','Jewish',
+                'Kebab','Korean','Kosher','Latin American','Lebanese','Malaysian',
+                'Mediterranean','Mexican','Middle Eastern','Mongolian','Moroccan',
+                'Nepalese','New American','Nicaraguan','Noodles','Pakistani',
+                'Pan Asian','Persian','Peruvian','Polish','Portuguese',
+                'Puerto Rican','Ramen','Russian','Salvadoran','Scottish',
+                'Seafood','Senegalese','Singaporean','Soul Food','Southern',
+                'Spanish','Sri Lankan','Steakhouses','Sushi Bars','Syrian',
+                'Taiwanese','Tapas Bars','Tapas Small Plates','Tex-Mex','Thai',
+                'Turkish','Ukrainian','Uzbek','Vegan','Vegetarian','Venezuelan',
+                'Vietnamese','Acai Bowls','Comfort Food','Creperies','Dim Sum',
+                'Empanadas','Falafel','Gluten-Free','International','Izakaya',
+                'Modern European','Pacific Northwest','Poke','Salad',
+                'Sandwiches','Scandinavian','Soup','Szechuan','Tacos',
+                'Taquerias','Waffles','Wraps','Pho','Banh Mi',
+                'Korean BBQ','Small Plates','Farm to Table','Organic',
+                'Fine Dining','Fast Casual','Breakfast & Brunch','Brunch',
+                'Deli','Bakery','Ice Cream','Gelato','Bubble Tea',
+                'Boba','Smoothies','Cafe','Steakhouse','Chophouse',
+                'Oyster Bar','Sushi','Pizza','Pasta','Burgers',
+                'Wings','Fried Chicken','Burritos','Quesadillas',
+                'Dumplings','Stew','Chili','Curry','Tapas',
+                'Mezze','Charcuterie','Creole','Gumbo',
+                'New Mexican Cuisine','Honduran','Guatemalan','Jamaican',
+                'Haitian','Ecuadorian','Chilean','Georgian','Eritrean',
+                'Somali','Nigerian','Kenyan','South African',
+                'Cantonese','Shanghainese','Hakka','Tibetan','Laotian'
+            )
+            GROUP BY c.cuisine_type
+            HAVING COUNT(*) >= 3
+            ORDER BY avg_score DESC
+            LIMIT 10
+        """
+        cuisine_df = pd.read_sql(cuisine_query, conn, params=[st.session_state.selected_city])
+
+        if len(cuisine_df) > 0:
+            cuisine_df["avg_score"] = cuisine_df["avg_score"].round(2)
+
+            fig_cuisine = px.bar(
+                cuisine_df,
+                x="avg_score",
+                y="cuisine_type",
+                orientation="h",
+                color="avg_score",
+                color_continuous_scale=["#D32F2F", "#F9A825", "#2E7D32"],
+                range_color=[1, 5],
+                text="avg_score",
+                labels={"avg_score": "Avg Fork Score", "cuisine_type": "Cuisine"}
+            )
+
+            fig_cuisine.update_traces(
+                textposition="outside",
+                textfont=dict(color="white", size=12)
+            )
+
+            fig_cuisine.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="white", family="Poppins"),
+                height=420,
+                margin=dict(l=0, r=60, t=20, b=0),
+                xaxis=dict(
+                    showgrid=True,
+                    gridcolor="rgba(255,255,255,0.08)",
+                    range=[0, 5.5],
+                    tickfont=dict(color="white")
+                ),
+                yaxis=dict(
+                    tickfont=dict(color="white"),
+                    categoryorder="total ascending"
+                ),
+                coloraxis_showscale=False
+            )
+
+            st.plotly_chart(fig_cuisine, use_container_width=True)
+        else:
+            st.info("Not enough cuisine data for this city.")
+
+
 # ══════════════════════════════════════════════════════════════
 # ABOUT PAGE
 # ══════════════════════════════════════════════════════════════
