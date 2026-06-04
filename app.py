@@ -625,6 +625,79 @@ elif st.session_state.page == "explore":
         else:
             st.info("Not enough cuisine data for this city.")
 
+        
+        # ── RATING VS REVIEW COUNT SCATTER ───────────────────
+        st.markdown("""
+            <h3 style='color:white; font-size:24px; font-weight:700;
+                font-family:Poppins,sans-serif; margin:40px 0 8px 0;'>
+                ⭐ Rating vs Review Count
+            </h3>
+            <p style='color:#AAAAAA; font-size:14px; font-family:Poppins,sans-serif; margin-bottom:16px;'>
+                Each dot is a restaurant. A high rating with few reviews is unproven — 
+                Fork Score accounts for both.
+            </p>
+        """, unsafe_allow_html=True)
+
+        scatter_df = results.dropna(subset=["latitude", "longitude"]).copy()
+        scatter_df["price_display"] = scatter_df["price_level"]
+
+        fig_scatter = px.scatter(
+            scatter_df,
+            x="review_count",
+            y="overall_rating",
+            color="Score Tier",
+            size="fork_score",
+            size_max=18,
+            hover_name="name",
+            hover_data={
+                "overall_rating": True,
+                "review_count": True,
+                "fork_score": True,
+                "price_display": True,
+                "Score Tier": False
+            },
+            color_discrete_map={
+                "Excellent (4.0+)": "#2E7D32",
+                "Great (3.0+)": "#F9A825",
+                "Good (below 3.0)": "#D32F2F"
+            },
+            labels={
+                "review_count": "Number of Reviews",
+                "overall_rating": "Star Rating",
+                "fork_score": "Fork Score",
+                "price_display": "Price"
+            }
+        )
+
+        fig_scatter.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="white", family="Poppins"),
+            height=450,
+            margin=dict(l=0, r=0, t=20, b=0),
+            xaxis=dict(
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.08)",
+                tickfont=dict(color="white"),
+                title_font=dict(color="white")
+            ),
+            yaxis=dict(
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.08)",
+                tickfont=dict(color="white"),
+                title_font=dict(color="white"),
+                range=[0.5, 5.5]
+            ),
+            legend=dict(
+                font=dict(color="white", size=13),
+                bgcolor="rgba(30,30,30,0.8)",
+                bordercolor="rgba(255,255,255,0.1)",
+                borderwidth=1
+            )
+        )
+
+        st.plotly_chart(fig_scatter, use_container_width=True)
+
 
 # ══════════════════════════════════════════════════════════════
 # ABOUT PAGE
