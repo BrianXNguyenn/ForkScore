@@ -698,6 +698,79 @@ elif st.session_state.page == "explore":
 
         st.plotly_chart(fig_scatter, use_container_width=True)
 
+        # ── PRICE VS FORK SCORE ───────────────────────────────
+        st.markdown("""
+            <h3 style='color:white; font-size:24px; font-weight:700;
+                font-family:Poppins,sans-serif; margin:40px 0 8px 0;'>
+                💰 Does Price = Quality?
+            </h3>
+            <p style='color:#AAAAAA; font-size:14px; font-family:Poppins,sans-serif; margin-bottom:16px;'>
+                Average Fork Score by price tier. Does spending more actually get you better food?
+            </p>
+        """, unsafe_allow_html=True)
+
+        price_query = """
+            SELECT p.price_level, AVG(p.fork_score) as avg_score, COUNT(*) as count
+            FROM restaurants r
+            JOIN pricing p ON r.id = p.restaurant_id
+            WHERE r.city = %s
+            GROUP BY p.price_level
+            ORDER BY p.price_level
+        """
+        price_df = pd.read_sql(price_query, conn, params=[st.session_state.selected_city])
+
+        if len(price_df) > 0:
+            price_df["avg_score"] = price_df["avg_score"].round(2)
+            price_df["price_label"] = price_df["price_level"].map({
+                1: "$", 2: "$$", 3: "$$$", 4: "$$$$"
+            })
+            price_df["count_label"] = price_df["count"].astype(str) + " restaurants"
+
+            fig_price = px.bar(
+                price_df,
+                x="price_label",
+                y="avg_score",
+                color="avg_score",
+                color_continuous_scale=["#D32F2F", "#F9A825", "#2E7D32"],
+                range_color=[1, 5],
+                text="avg_score",
+                custom_data=["count_label"],
+                labels={
+                    "price_label": "Price Tier",
+                    "avg_score": "Avg Fork Score"
+                }
+            )
+
+            fig_price.update_traces(
+                textposition="outside",
+                textfont=dict(color="white", size=13),
+                hovertemplate="<b>%{x}</b><br>Avg Fork Score: %{y}<br>%{customdata[0]}<extra></extra>"
+            )
+
+            fig_price.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="white", family="Poppins"),
+                height=420,
+                margin=dict(l=0, r=0, t=40, b=0),
+                xaxis=dict(
+                    tickfont=dict(color="white", size=16),
+                    title_font=dict(color="white")
+                ),
+                yaxis=dict(
+                    showgrid=True,
+                    gridcolor="rgba(255,255,255,0.08)",
+                    tickfont=dict(color="white"),
+                    title_font=dict(color="white"),
+                    range=[0, 5.5]
+                ),
+                coloraxis_showscale=False
+            )
+
+            st.plotly_chart(fig_price, use_container_width=True)
+        else:
+            st.info("Not enough price data for this city.")
+
 
 # ══════════════════════════════════════════════════════════════
 # ABOUT PAGE
